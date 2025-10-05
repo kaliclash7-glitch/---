@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تدوين المصاريف اليومية</title>
+    <title>إدارة الدخل والمصاريف اليومية</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -16,14 +16,14 @@
             text-align: center;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: auto;
             background: white;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
-        input, button {
+        form input, form select, form button {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -40,67 +40,120 @@
             background-color: #45a049;
         }
         .entry-list {
-            margin-top: 20px;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .date {
+            font-size: 18px;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>تدوين المصاريف اليومية</h1>
-        <form id="expense-form">
-            <label for="expense-date">التاريخ:</label>
-            <input type="date" id="expense-date" required>
-            <label for="expense-amount">المبلغ:</label>
-            <input type="number" id="expense-amount" required>
-            <label for="expense-category">الفئة:</label>
-            <input type="text" id="expense-category" required>
-            <button type="submit">إضافة المصاريف</button>
+        <h1>إدارة الدخل والمصاريف اليومية</h1>
+        <div class="header">
+            <span class="date" id="current-date"></span>
+        </div>
+        <form id="income-expense-form">
+            <h3>إضافة مصدر دخل أو مصاريف</h3>
+            <select id="entry-type" required>
+                <option value="income">مصدر دخل</option>
+                <option value="expense">مصاريف</option>
+            </select>
+            <input type="number" id="amount" placeholder="المبلغ" required>
+            <input type="text" id="category" placeholder="الفئة (مثال: طعام، خدمات، تسوق)" required>
+            <button type="submit">إضافة</button>
         </form>
         <div class="entry-list">
-            <h3>المصاريف المسجلة:</h3>
-            <ul id="expense-list"></ul>
+            <h3>المصادر والمصاريف المسجلة:</h3>
+            <table id="entry-table">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المبلغ</th>
+                        <th>الفئة</th>
+                        <th>النوع</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- سيتم إضافة البيانات هنا -->
+                </tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        // الدالة لتحديث عرض البيانات المخزنة
-        function displayExpenses() {
-            const expenseList = document.getElementById("expense-list");
-            expenseList.innerHTML = ''; // مسح القائمة الحالية
+        // الحصول على التاريخ الحالي بالتنسيق العالمي (YYYY-MM-DD)
+        function getCurrentDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = (today.getMonth() + 1).toString().padStart(2, '0');
+            const day = today.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
 
-            const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        // عرض التاريخ الحالي في الواجهة
+        document.getElementById('current-date').textContent = `تاريخ اليوم: ${getCurrentDate()}`;
 
-            expenses.forEach((expense, index) => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `التاريخ: ${expense.date}, المبلغ: ${expense.amount}₪, الفئة: ${expense.category}`;
-                expenseList.appendChild(listItem);
+        // تحديث عرض البيانات المخزنة
+        function displayEntries() {
+            const entryTable = document.getElementById('entry-table').getElementsByTagName('tbody')[0];
+            entryTable.innerHTML = ''; // مسح البيانات القديمة
+
+            const entries = JSON.parse(localStorage.getItem('entries')) || [];
+            entries.forEach((entry) => {
+                const row = entryTable.insertRow();
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.amount} ₪</td>
+                    <td>${entry.category}</td>
+                    <td>${entry.type === 'income' ? 'دخل' : 'مصاريف'}</td>
+                `;
             });
         }
 
-        // إضافة المصاريف إلى التخزين المحلي
-        function addExpense(date, amount, category) {
-            const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
-            expenses.push({ date, amount, category });
-            localStorage.setItem('expenses', JSON.stringify(expenses));
-            displayExpenses(); // تحديث العرض بعد إضافة المصاريف
+        // إضافة مصدر دخل أو مصروف
+        function addEntry(date, amount, category, type) {
+            const entries = JSON.parse(localStorage.getItem('entries')) || [];
+            entries.push({ date, amount, category, type });
+            localStorage.setItem('entries', JSON.stringify(entries));
+            displayEntries(); // تحديث العرض بعد إضافة البيانات
         }
 
         // معالجة إرسال النموذج
-        document.getElementById('expense-form').addEventListener('submit', (e) => {
+        document.getElementById('income-expense-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
-            const date = document.getElementById('expense-date').value;
-            const amount = document.getElementById('expense-amount').value;
-            const category = document.getElementById('expense-category').value;
+            const type = document.getElementById('entry-type').value;
+            const amount = document.getElementById('amount').value;
+            const category = document.getElementById('category').value;
+            const date = getCurrentDate(); // الحصول على التاريخ الحالي تلقائيًا
 
-            if (date && amount && category) {
-                addExpense(date, amount, category);
+            if (amount && category) {
+                addEntry(date, amount, category, type);
                 e.target.reset(); // إعادة تعيين النموذج
             }
         });
 
-        // عرض المصاريف عند تحميل الصفحة
-        displayExpenses();
+        // عرض البيانات عند تحميل الصفحة
+        displayEntries();
     </script>
 </body>
 </html>
